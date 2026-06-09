@@ -49,7 +49,22 @@ jobs:
           token: ${{ secrets.TAP_GITHUB_TOKEN }}
           path: "homebrew-mishazawa"
 
-      - name: Update Formula and Create PR
+      - name: Update Formula File
+        env:
+          RELEASE_URL: ${{ steps.create_release.outputs.url }}
+          RELEASE_SHA: ${{ steps.calc_hash.outputs.sha256 }}
+          BINARY_NAME: "my_scrobbler"
+        run: |
+          FORMULA_PATH="homebrew-mishazawa/Formula/my_scrobbler.rb"
+
+          ASSET_URL="${{ env.RELEASE_URL }}"
+          ASSET_URL="${ASSET_URL/tag/download}\/${{ env.BINARY_NAME }}"
+
+          # Update the url and sha256 lines in the Ruby file
+          sed -i '' "s|url \".*\"|url \"$ASSET_URL\"|" $FORMULA_PATH
+          sed -i '' "s|sha256 \".*\"|sha256 \"${{ env.RELEASE_SHA }}\"|" $FORMULA_PATH
+
+      - name: Create Pull Request in Tap Repo
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.TAP_GITHUB_TOKEN }}
@@ -63,15 +78,3 @@ jobs:
           base: main
           add-paths: |
             Formula/my_scrobbler.rb
-        env:
-          RELEASE_URL: ${{ steps.create_release.outputs.url }}
-          RELEASE_SHA: ${{ steps.calc_hash.outputs.sha256 }}
-          BINARY_NAME: "my_scrobbler"
-        run: |
-          FORMULA_PATH="homebrew-mishazawa/Formula/my_scrobbler.rb"
-
-          ASSET_URL="${{ env.RELEASE_URL }}"
-          ASSET_URL="${ASSET_URL/tag/download}\/${{ env.BINARY_NAME }}"
-
-          sed -i '' "s|url \".*\"|url \"$ASSET_URL\"|" $FORMULA_PATH
-          sed -i '' "s|sha256 \".*\"|sha256 \"${{ env.RELEASE_SHA }}\"|" $FORMULA_PATH
