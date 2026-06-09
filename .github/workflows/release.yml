@@ -51,12 +51,10 @@ jobs:
 
       - name: Update Formula File
         env:
-          RELEASE_URL: ${{ steps.create_release.outputs.url }}
           RELEASE_SHA: ${{ steps.calc_hash.outputs.sha256 }}
-          BINARY_NAME: "my_scrobbler"
         run: |
           FORMULA_PATH="homebrew-mishazawa/Formula/my-scrobbler.rb"
-          ASSET_URL=$(echo "$RELEASE_URL" | sed 's/\/tag\//\/download\//')/$BINARY_NAME
+          ASSET_URL="https://github.com/mishazawa/my_scrobbler/releases/download/${{ github.ref_name }}/my_scrobbler"
           echo "Constructed URL: $ASSET_URL"
 
           sed -i '' "s,url \".*\",url \"$ASSET_URL\"," $FORMULA_PATH
