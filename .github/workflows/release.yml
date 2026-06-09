@@ -55,7 +55,7 @@ jobs:
           RELEASE_SHA: ${{ steps.calc_hash.outputs.sha256 }}
           BINARY_NAME: "my_scrobbler"
         run: |
-          FORMULA_PATH="homebrew-mishazawa/Formula/my_scrobbler.rb"
+          FORMULA_PATH="homebrew-mishazawa/Formula/my-scrobbler.rb"
 
           ASSET_URL="${{ env.RELEASE_URL }}"
           ASSET_URL="${ASSET_URL/tag/download}\/${{ env.BINARY_NAME }}"
@@ -77,4 +77,4 @@ jobs:
           delete-branch: true
           base: main
           add-paths: |
-            Formula/my_scrobbler.rb
+            Formula/my-scrobbler.rb
