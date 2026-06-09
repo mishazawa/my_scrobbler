@@ -56,7 +56,7 @@ jobs:
           BINARY_NAME: "my_scrobbler"
         run: |
           FORMULA_PATH="homebrew-mishazawa/Formula/my-scrobbler.rb"
-          ASSET_URL=$(echo "${{ env.RELEASE_URL }}" | sed 's/\/tag\//\/download\//')/$BINARY_NAME
+          ASSET_URL=$(echo "$RELEASE_URL" | sed 's/\/tag\//\/download\//')/$BINARY_NAME
           echo "Constructed URL: $ASSET_URL"
 
           sed -i '' "s,url \".*\",url \"$ASSET_URL\"," $FORMULA_PATH
