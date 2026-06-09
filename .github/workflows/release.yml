@@ -35,3 +35,43 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calculate Binary SHA-256
+        id: calc_hash
+        run: |
+          HASH=$(shasum -a 256 build/my_scrobbler | awk '{print $1}')
+          echo "sha256=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Checkout Homebrew Tap Repo
+        uses: actions/checkout@v4
+        with:
+          repository: "mishazawa/homebrew-mishazawa"
+          token: ${{ secrets.TAP_GITHUB_TOKEN }}
+          path: "homebrew-mishazawa"
+
+      - name: Update Formula and Create PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.TAP_GITHUB_TOKEN }}
+          path: "homebrew-mishazawa"
+          commit-message: "Update my_scrobbler to ${{ github.ref_name }}"
+          title: "Update my_scrobbler to ${{ github.ref_name }}"
+          body: |
+            Automated formula update for `my_scrobbler` release [${{ github.ref_name }}](${{ steps.create_release.outputs.url }}).
+          branch: "update-my_scrobbler-${{ github.ref_name }}"
+          delete-branch: true
+          base: main
+          add-paths: |
+            Formula/my_scrobbler.rb
+        env:
+          RELEASE_URL: ${{ steps.create_release.outputs.url }}
+          RELEASE_SHA: ${{ steps.calc_hash.outputs.sha256 }}
+          BINARY_NAME: "my_scrobbler"
+        run: |
+          FORMULA_PATH="homebrew-mishazawa/Formula/my_scrobbler.rb"
+
+          ASSET_URL="${{ env.RELEASE_URL }}"
+          ASSET_URL="${ASSET_URL/tag/download}\/${{ env.BINARY_NAME }}"
+
+          sed -i '' "s|url \".*\"|url \"$ASSET_URL\"|" $FORMULA_PATH
+          sed -i '' "s|sha256 \".*\"|sha256 \"${{ env.RELEASE_SHA }}\"|" $FORMULA_PATH
