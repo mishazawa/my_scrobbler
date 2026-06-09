@@ -54,11 +54,20 @@ jobs:
           RELEASE_SHA: ${{ steps.calc_hash.outputs.sha256 }}
         run: |
           FORMULA_PATH="homebrew-mishazawa/Formula/my-scrobbler.rb"
+
+          TAG_NAME="${{ github.ref_name }}"
+          VERSION_NUM="${TAG_NAME#v}"
+
+          echo "Target Version: $VERSION_NUM"
+
           ASSET_URL="https://github.com/mishazawa/my_scrobbler/releases/download/${{ github.ref_name }}/my_scrobbler"
           echo "Constructed URL: $ASSET_URL"
 
-          sed -i '' "s,url \".*\",url \"$ASSET_URL\"," $FORMULA_PATH
-          sed -i '' "s,sha256 \".*\",sha256 \"${{ env.RELEASE_SHA }}\"," $FORMULA_PATH
+          sed "s,url \".*\",url \"$ASSET_URL\"," $FORMULA_PATH | \
+          sed "s,sha256 \".*\",sha256 \"$RELEASE_SHA\"," | \
+          sed "s,version \".*\",version \"$VERSION_NUM\"," > temp_formula.rb
+
+          mv temp_formula.rb $FORMULA_PATH
 
       - name: Create Pull Request in Tap Repo
         uses: peter-evans/create-pull-request@v6
