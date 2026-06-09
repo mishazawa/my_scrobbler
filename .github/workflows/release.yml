@@ -23,13 +23,13 @@ jobs:
       - name: Compile for macOS
         run: |
           # Compile for Apple Silicon
-          GOOS=darwin GOARCH=arm64 go build -o build/my-scrobbler-darwin ./cmd/scrobbler
+          GOOS=darwin GOARCH=arm64 go build -o build/my_scrobbler ./cmd/scrobbler
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            build/my-scrobbler-darwin
+            build/my_scrobbler
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
