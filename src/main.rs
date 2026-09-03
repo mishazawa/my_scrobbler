@@ -20,7 +20,9 @@ fn main() {
 
     println!("[i] Starting my_scrobbler...");
 
-    let listener = MusicListener::new(ScrobbleManager::new());
+    let sm = ScrobbleManager::new().expect("[e] Can't init scrobbler. Check keyring.");
+
+    let listener = MusicListener::new(sm);
 
     listener.start();
 

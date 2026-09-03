@@ -1,7 +1,10 @@
 use std::{
-    cmp,
+    env,
     time::{Duration, Instant},
 };
+
+use keyring::Entry;
+use rustfm_scrobble::{Scrobble, Scrobbler};
 
 static SERVICE: &str = "my-scrobbler";
 
@@ -16,6 +19,7 @@ pub(crate) struct ScrobbleManager {
     time_started: Instant,
     last_play_ts: Instant,
     accumulated_time: Duration,
+    api: Scrobbler,
 }
 
 #[derive(Debug)]
@@ -57,18 +61,39 @@ impl Track {
             duration: duration,
         }
     }
+    pub fn to_scrobble(&self) -> Scrobble {
+        Scrobble::new(&self.artist, &self.name, &self.album)
+    }
 }
 
 impl ScrobbleManager {
-    pub fn new() -> ScrobbleManager {
-        ScrobbleManager {
-            track: None,
-            has_scrobbled: false,
-            is_playing: false,
-            accumulated_time: Duration::default(),
-            time_started: Instant::now(),
-            last_play_ts: Instant::now(),
+    // TODO: cleanup this mess!
+    pub fn new() -> Option<ScrobbleManager> {
+        let api_key = env::var("LASTFM_API_KEY").unwrap();
+        let api_secret = env::var("LASTFM_API_SECRET").unwrap();
+        let username = env::var("LASTFM_USERNAME").unwrap();
+
+        let mut scrobbler = Scrobbler::new(&api_key, &api_secret);
+
+        if let Ok(password) = Entry::new(SERVICE, &username).and_then(|entry| entry.get_password())
+        {
+            return scrobbler
+                .authenticate_with_password(&username, &password)
+                .and_then(|_| {
+                    return Ok(Some(ScrobbleManager {
+                        track: None,
+                        has_scrobbled: false,
+                        is_playing: false,
+                        accumulated_time: Duration::default(),
+                        time_started: Instant::now(),
+                        last_play_ts: Instant::now(),
+                        api: scrobbler,
+                    }));
+                })
+                .unwrap();
         }
+
+        None
     }
 
     pub fn process_track(&mut self, track_data: Track, player_state: PlayerState) {
@@ -96,7 +121,13 @@ impl ScrobbleManager {
 
         if let Some(t) = &self.track {
             if self.is_threshold_passed() {
-                println!("[i] SCROBBLED: {} - {}", t.artist, t.name);
+                match self.api.scrobble(&t.to_scrobble()) {
+                    Ok(_) => {
+                        self.has_scrobbled = true;
+                        println!("[i] SCROBBLED: {} - {}", t.artist, t.name);
+                    }
+                    Err(err) => println!("{}", err),
+                };
             } else {
                 let rounded =
                     Duration::from_secs(self.accumulated_time.as_secs_f64().round() as u64);
@@ -142,10 +173,13 @@ impl ScrobbleManager {
                 self.is_playing = true;
                 self.last_play_ts = Instant::now();
 
-                // api call
-
                 if let Some(t) = self.track.as_ref() {
-                    println!("[i] Now Playing: {} - {}", t.artist, t.name);
+                    match self.api.now_playing(&t.to_scrobble()) {
+                        Ok(_) => {
+                            println!("[i] Now Playing: {} - {}", t.artist, t.name);
+                        }
+                        Err(err) => println!("{}", err),
+                    };
                 }
             }
             _ => {}
