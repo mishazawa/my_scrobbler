@@ -1,6 +1,9 @@
 use crate::lastfm::{PlayerState, ScrobbleManager, Track};
 
-use std::{ptr::NonNull, sync::Arc};
+use std::{
+    ptr::NonNull,
+    sync::{Arc, Mutex},
+};
 
 use block2::RcBlock;
 use objc2::rc::Retained;
@@ -9,12 +12,14 @@ use objc2_foundation::{
 };
 
 pub(crate) struct MusicListener {
-    scrobbler: ScrobbleManager,
+    scrobbler: Mutex<ScrobbleManager>,
 }
 
 impl MusicListener {
     pub fn new(scrobbler: ScrobbleManager) -> Arc<MusicListener> {
-        Arc::new(MusicListener { scrobbler })
+        Arc::new(MusicListener {
+            scrobbler: scrobbler.into(),
+        })
     }
 
     pub fn start(self: &Arc<Self>) {
@@ -55,7 +60,7 @@ impl MusicListener {
             .and_then(|v| v.downcast_ref::<NSNumber>().map(|s| s.as_f64() / 1000.0))
             .unwrap_or(0.0);
 
-        self.scrobbler.process_track(
+        self.scrobbler.lock().unwrap().process_track(
             Track::new(track_name, track_artist, track_album, duration),
             PlayerState::from_str_or_default(player_state.as_str()),
         );
