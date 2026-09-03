@@ -1,0 +1,13 @@
+[package]
+name = "my_scrobbler"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rustfm-scrobble = "1.1"
+objc2-foundation = "0.3.2"
+keyring = "4.2.0"
+objc2 = "0.6.4"
+objc2-app-kit = "0.3.2"
+dotenv = "0.15.0"
+block2 = "0.6.2"
