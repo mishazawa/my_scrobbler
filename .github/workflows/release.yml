@@ -14,16 +14,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
-          go-version: "1.26.3"
-          cache: true
+          toolchain: "1.81.0"
+          targets: aarch64-apple-darwin
 
-      - name: Compile for macOS
+      - name: Cache cargo registry and target
+        uses: Swatinem/rust-cache@v2
+
+      - name: Compile for macOS (Apple Silicon)
         run: |
-          # Compile for Apple Silicon
-          GOOS=darwin GOARCH=arm64 go build -o build/my_scrobbler ./cmd/scrobbler
+          cargo build --release --target aarch64-apple-darwin
+          mkdir -p build
+          cp target/aarch64-apple-darwin/release/my_scrobbler build/my_scrobbler
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

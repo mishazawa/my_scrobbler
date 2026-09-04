@@ -46,3 +46,8 @@ go.work.sum
 # .vscode/
 
 old_src/
+
+
+# Added by cargo
+
+/target
