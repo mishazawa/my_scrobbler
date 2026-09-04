@@ -1,30 +1,34 @@
-use dotenv;
 use objc2::MainThreadMarker;
 use objc2_app_kit::NSApplication;
-use std::env;
 
 mod lastfm;
 mod player;
+mod utils;
 
 use lastfm::ScrobbleManager;
-
-use crate::player::MusicListener;
+use player::MusicListener;
+use utils::parse_config;
 
 fn main() {
-    let my_path = env::home_dir()
-        .and_then(|a| Some(a.join(".config").join("my_scrobbler").join("config.env")))
-        .unwrap();
-
-    // TODO: just read file?
-    dotenv::from_path(my_path.as_path()).expect("[e] Error: Could not load .env config file.");
+    let creds = match parse_config() {
+        Ok(res) => res,
+        Err(e) => {
+            eprintln!("[e] {e}");
+            std::process::exit(1);
+        }
+    };
 
     println!("[i] Starting my_scrobbler...");
 
-    let sm = ScrobbleManager::new().expect("[e] Can't init scrobbler. Check keyring.");
+    let manager = match ScrobbleManager::new(creds) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("[e] {e}");
+            std::process::exit(1);
+        }
+    };
 
-    let listener = MusicListener::new(sm);
-
-    listener.start();
+    MusicListener::new(manager).start();
 
     let mtm = MainThreadMarker::new().expect("[e] Must be on the main thread");
     let app = NSApplication::sharedApplication(mtm);
